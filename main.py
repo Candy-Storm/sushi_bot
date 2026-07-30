@@ -36,7 +36,7 @@ kb_wheel = ReplyKeyboardMarkup(
         KeyboardButton(
             text="🎰 Відкрити Рулетку",
             web_app=WebAppInfo(
-                url="https://candy-storm.github.io/sushi_bot/index.html?v=105"
+                url="https://candy-storm.github.io/sushi_bot/index.html?v=106"
             ),
         )
     ]],
