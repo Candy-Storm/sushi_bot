@@ -2,34 +2,35 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Суші Рулетка</title>
-    <!-- Підключаємо Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
         }
         body {
-            background-color: #1c1c1e;
+            background: radial-gradient(circle, #2c2c2e 0%, #111113 100%);
             color: #ffffff;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            text-align: center;
+            overflow: hidden;
             padding: 20px;
         }
         h2 {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             color: #ff4757;
-            font-size: 24px;
+            font-size: 26px;
+            text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
         }
-        .wheel-container {
+        .wheel-box {
             position: relative;
             width: 320px;
             height: 320px;
@@ -37,50 +38,51 @@
         /* Вказівник (стрілочка зверху) */
         .arrow {
             position: absolute;
-            top: -15px;
+            top: -18px;
             left: 50%;
             transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 25px solid #ff4757;
+            border-left: 16px solid transparent;
+            border-right: 16px solid transparent;
+            border-top: 28px solid #ff4757;
             z-index: 10;
-            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));
+            filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.8));
         }
         canvas {
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
+            box-shadow: 0 0 30px rgba(255, 71, 87, 0.3), inset 0 0 15px rgba(0,0,0,0.5);
         }
         .spin-btn {
-            margin-top: 30px;
-            padding: 15px 40px;
-            font-size: 18px;
-            font-weight: bold;
+            margin-top: 35px;
+            padding: 16px 45px;
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: 1px;
             color: #fff;
-            background: linear-gradient(45deg, #ff4757, #ff6b81);
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
             border: none;
-            border-radius: 30px;
+            border-radius: 35px;
             cursor: pointer;
-            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
-            transition: transform 0.2s, opacity 0.2s;
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+            transition: all 0.2s ease;
         }
         .spin-btn:active {
-            transform: scale(0.95);
+            transform: scale(0.94);
         }
         .spin-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+            opacity: 0.4;
+            transform: none;
         }
     </style>
 </head>
 <body>
 
-    <h2>🍣 Суші Рулетка 🎲</h2>
+    <h2>🍣 СУШІ РУЛЕТКА 🎲</h2>
 
-    <div class="wheel-container">
+    <div class="wheel-box">
         <div class="arrow"></div>
         <canvas id="wheel" width="400" height="400"></canvas>
     </div>
@@ -89,20 +91,21 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Розгортаємо WebApp на весь екран
+        tg.ready();
+        tg.expand(); // Розгортаємо вікно Telegram на максимум
 
         const canvas = document.getElementById("wheel");
         const ctx = canvas.getContext("2d");
         const spinBtn = document.getElementById("spinBtn");
 
-        // 6 секторів рулетки
+        // Призи та сектори (відповідають PRIZES у боті)
         const sectors = [
-            { label: "🥤 Напій", color: "#ff4757" },
-            { label: "💸 Знижка 10%", color: "#2ed573" },
-            { label: "💰 Знижка 15%", color: "#1e90ff" },
-            { label: "🌀 Ще раз", color: "#ffa502" },
-            { label: "🎲 +1 спін", color: "#9b59b6" },
-            { label: "🍣 Рол за 1грн", color: "#ff6b81" }
+            { label: "🥤 Напій", color: "#FF4757" },
+            { label: "💸 Знижка 10%", color: "#2ED573" },
+            { label: "💰 Знижка 15%", color: "#1E90FF" },
+            { label: "🌀 Ще раз", color: "#FFA502" },
+            { label: "🎲 +1 спін", color: "#9B59B6" },
+            { label: "🍣 Рол 1 грн", color: "#FF6B81" }
         ];
 
         const numSectors = sectors.length;
@@ -110,7 +113,6 @@
         let currentAngle = 0;
         let isSpinning = false;
 
-        // Малювання колеса
         function drawWheel() {
             const radius = canvas.width / 2;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -125,46 +127,58 @@
                 ctx.arc(radius, radius, radius, angle, angle + arc);
                 ctx.lineTo(radius, radius);
                 ctx.fill();
-                ctx.strokeStyle = "#1c1c1e";
-                ctx.lineWidth = 4;
+                ctx.strokeStyle = "#1C1C1E";
+                ctx.lineWidth = 5;
                 ctx.stroke();
 
-                // Текст у секторі
+                // Текст сектора
                 ctx.save();
                 ctx.translate(radius, radius);
                 ctx.rotate(angle + arc / 2);
                 ctx.textAlign = "right";
                 ctx.fillStyle = "#ffffff";
-                ctx.font = "bold 18px sans-serif";
+                ctx.font = "bold 18px -apple-system, sans-serif";
                 ctx.fillText(sector.label, radius - 20, 6);
                 ctx.restore();
             });
+
+            // Малюємо стильний центр
+            ctx.beginPath();
+            ctx.arc(radius, radius, 30, 0, 2 * Math.PI);
+            ctx.fillStyle = "#1C1C1E";
+            ctx.fill();
+            ctx.strokeStyle = "#FF4757";
+            ctx.lineWidth = 4;
+            ctx.stroke();
         }
 
         drawWheel();
 
-        // Анімація обертання
         spinBtn.addEventListener("click", () => {
             if (isSpinning) return;
             isSpinning = true;
             spinBtn.disabled = true;
 
-            // Випадкова кількість обертів + випадковий кут
-            const extraRounds = 5 + Math.floor(Math.random() * 5); // 5-9 повних обертів
-            const randomSectorIndex = Math.floor(Math.random() * numSectors);
+            // Вібрація при старті (якщо пристрій підтримує)
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('heavy');
+            }
+
+            const extraRounds = 6 + Math.floor(Math.random() * 4); // 6-9 обертів
+            const winIndex = Math.floor(Math.random() * numSectors);
             
-            // Розрахунок кінцевого кута (щоб стрілка вказувала на потрібний сектор)
-            const targetAngle = (2 * Math.PI * extraRounds) + ((numSectors - randomSectorIndex - 0.5) * arc);
+            // Розрахунок зупинкиExactly під стрілку зверху (3PI/2)
+            const targetAngle = (2 * Math.PI * extraRounds) + ((numSectors - winIndex - 0.5) * arc);
             
             let start = null;
-            const duration = 4000; // 4 секунди анімації
+            const duration = 4500; // 4.5 секунди анімації
 
             function animate(timestamp) {
                 if (!start) start = timestamp;
                 const progress = (timestamp - start) / duration;
 
                 if (progress < 1) {
-                    // Плавне сповільнення (Ease-Out Cubic)
+                    // Плавне гальмування колеса (Ease Out Cubic)
                     const easeOut = 1 - Math.pow(1 - progress, 3);
                     currentAngle = targetAngle * easeOut;
                     drawWheel();
@@ -173,13 +187,15 @@
                     currentAngle = targetAngle;
                     drawWheel();
                     
-                    // Результат
-                    const wonSector = sectors[randomSectorIndex].label;
-                    
-                    // Надсилаємо дані назад у бот Telegram
+                    if (tg.HapticFeedback) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                    }
+
+                    // Повертаємо виграш у бот Telegram
+                    const wonPrize = sectors[winIndex].label;
                     setTimeout(() => {
-                        tg.sendData(JSON.stringify({ prize: wonSector }));
-                    }, 500);
+                        tg.sendData(JSON.stringify({ prize: wonPrize }));
+                    }, 600);
                 }
             }
 

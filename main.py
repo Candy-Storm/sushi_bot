@@ -1,37 +1,35 @@
 import asyncio
+import json
 import logging
-import random
-from datetime import datetime, timedelta
-from aiogram import Bot, Dispatcher, types, F
+from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import CommandStart
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from database import init_db, is_user_registered, register_user, can_spin, update_spin_time
-from database import init_db, is_user_registered, register_user, can_spin, update_spin_time, save_promocode
+from aiogram.types import (
+    ReplyKeyboardMarkup, 
+    KeyboardButton, 
+    InlineKeyboardMarkup, 
+    InlineKeyboardButton, 
+    WebAppInfo
+)
+from database import (
+    init_db, 
+    is_user_registered, 
+    register_user, 
+    can_spin, 
+    update_spin_time, 
+    save_promocode
+)
 
 BOT_TOKEN = "8606797635:AAGhDiB9oAxkP5ozPPWKE2WFMYQQo4XwBcY"
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# 🎲 Наші 6 секторів та їхні ваги (шанси виграшу)
-PRIZES = [
-    {"name": "🥤 Соус / Напій у подарунок", "weight": 40},
-    {"name": "💸 Знижка 10%", "weight": 15},
-    {"name": "💰 Знижка 15%", "weight": 10},
-    {"name": "🌀 Спробуйте ще", "weight": 15},
-    {"name": "🎲 Спробуй завтра! (+1 спін)", "weight": 15},
-    {"name": "🍣 Рол «Філадельфія» за 1 грн (від 500 грн)", "weight": 5},
-]
-
-from aiogram.types import WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
-
-# Створюємо інлайн-кнопку з відкриттям WebApp
-# (Для тестування можна використати хостинг GitHub Pages або ngrok URL)
+# 🌐 Інлайн-кнопка для відкриття WebApp з GitHub Pages
 kb_inline_wheel = InlineKeyboardMarkup(
     inline_keyboard=[[
         InlineKeyboardButton(
             text="🎰 Відкрити Рулетку", 
-            web_app=WebAppInfo(url="https://твій-домен.com/index.html") # URL вашого HTML
+            web_app=WebAppInfo(url="https://candy-storm.github.io/sushi_bot/index.html")
         )
     ]]
 )
@@ -43,7 +41,7 @@ kb_phone = ReplyKeyboardMarkup(
     one_time_keyboard=True
 )
 
-# Головне меню з кнопкою гри
+# Головне меню
 kb_main = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text="🎰 Крутити колесо!")]],
     resize_keyboard=True
@@ -80,48 +78,53 @@ async def get_contact(message: types.Message):
         reply_markup=kb_main
     )
 
-# Обробка прокручування рулетки
+# 1. При натисканні "🎰 Крутити колесо!" надсилаємо кнопку з WebApp
 @dp.message(F.text == "🎰 Крутити колесо!")
 async def spin_wheel(message: types.Message):
     user_id = message.from_user.id
     
-    # 1. Перевірка таймера на 24 години
-    #if not can_spin(user_id):
-     #   await message.answer(
-      #      "⏳ Ви вже крутили колесо сьогодні!\n"
-       #     "Наступна спроба буде доступна через 24 години з моменту останнього спіну."
-        #)
-        #return
+    # Перевірка таймера на 24 години (розкоментуй для продакшену)
+    # if not can_spin(user_id):
+    #     await message.answer(
+    #         "⏳ Ви вже крутили колесо сьогодні!\n"
+    #         "Наступна спроба буде доступна через 24 години."
+    #     )
+    #     return
 
-    # 2. Анімація прокрутки
-    msg = await message.answer("🌀 Колесо крутиться... 🎰")
-    await asyncio.sleep(2)
+    await message.answer(
+        "Натисни кнопку нижче, щоб відкрити анімоване колесо рулетки! 👇",
+        reply_markup=kb_inline_wheel
+    )
+
+# 2. Обробка результату, який повертає index.html після прокрутки
+@dp.message(F.web_app_data)
+async def handle_web_app_data(message: types.Message):
+    user_id = message.from_user.id
     
-    # 3. Визначення призу за вагами (шансами)
-    prizes_list = [p["name"] for p in PRIZES]
-    weights_list = [p["weight"] for p in PRIZES]
-    win_prize = random.choices(prizes_list, weights=weights_list, k=1)[0]
+    # Зчитуємо дані з JSON, який відправив WebApp (tg.sendData)
+    data = json.loads(message.web_app_data.data)
+    win_prize = data.get("prize", "Знижка 10%")
     
-    # 4. Фіксація часу спіну
+    # Фіксуємо час спіну в БД
     update_spin_time(user_id)
     
-    # 5. Вивід результату
-    if win_prize == "🌀 Спробуйте ще":
-        await msg.edit_text("😔 На жаль, цього разу сектор порожній. Спробуйте ще раз завтра!")
-    elif win_prize == "🎲 Спробуй завтра! (+1 спін)":
-        await msg.edit_text("🎲 Вам випав бонусний спін на завтра! Повертайтеся завтра за призом!")
+    # Перевіряємо виграш
+    if win_prize in ["🌀 Ще раз", "🌀 Спробуйте ще"]:
+        await message.answer("😔 На жаль, цього разу сектор порожній. Спробуйте ще раз завтра!")
+    elif win_prize in ["🎲 +1 спін", "🎲 Спробуй завтра! (+1 спін)"]:
+        await message.answer("🎲 Вам випав бонусний спін на завтра! Повертайтеся завтра за призом!")
     else:
-    # Генеруємо промокод і зберігаємо в БД
+        # Генеруємо промокод і зберігаємо в БД
         code, expires_str = save_promocode(user_id, win_prize)
-
-    await msg.edit_text(
-        f"🎉 **ВІТАЄМО! Ви виграли:**\n\n"
-        f"🎁 **{win_prize}**\n"
-        f"🔑 Ваш промокод: `{code}`\n\n"
-        f"⏰ Дійсний до: **{expires_str}** (24 години)\n"
-        f"Покажіть цей код або назвіть його при замовленні!",
-        parse_mode="Markdown"
-       )
+        
+        await message.answer(
+            f"🎉 **ВІТАЄМО! Ви виграли:**\n\n"
+            f"🎁 **{win_prize}**\n"
+            f"🔑 Ваш промокод: `{code}`\n\n"
+            f"⏰ Дійсний до: **{expires_str}** (24 години)\n"
+            f"Покажіть цей код або назвіть його при замовленні!",
+            parse_mode="Markdown"
+        )
 
 async def main():
     logging.basicConfig(level=logging.INFO)
