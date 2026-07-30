@@ -27,7 +27,7 @@ kb_wheel = ReplyKeyboardMarkup(
     keyboard=[[
         KeyboardButton(
             text="🎰 Відкрити Рулетку", 
-            web_app=WebAppInfo(url="https://candy-storm.github.io/sushi_bot/index.html?v=16")
+            web_app=WebAppInfo(url="https://candy-storm.github.io/sushi_bot/index.html?v=17")
         )
     ]],
     resize_keyboard=True

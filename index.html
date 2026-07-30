@@ -1,130 +1,237 @@
-<script>
-    const tg = window.Telegram?.WebApp || {};
-    if (tg.ready) tg.ready();
-    if (tg.expand) tg.expand();
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Суші Рулетка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+        }
+        body {
+            background: #111113;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            padding: 20px;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #ff4757;
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+            text-align: center;
+        }
+        .wheel-box {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+        .arrow {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 16px solid transparent;
+            border-right: 16px solid transparent;
+            border-top: 28px solid #ff4757;
+            z-index: 10;
+            filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.8));
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(255, 71, 87, 0.3);
+        }
+        .spin-btn {
+            margin-top: 30px;
+            padding: 16px 45px;
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #fff;
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            border: none;
+            border-radius: 35px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+            transition: all 0.3s ease;
+        }
+        .spin-btn:active {
+            transform: scale(0.94);
+        }
+        .spin-btn:disabled {
+            opacity: 0.5;
+            transform: none;
+        }
+        .claim-btn {
+            background: linear-gradient(135deg, #2ed573, #26af5f) !important;
+            box-shadow: 0 6px 20px rgba(46, 213, 115, 0.5) !important;
+        }
+        #status {
+            margin-top: 15px;
+            font-size: 16px;
+            color: #2ed573;
+            font-weight: bold;
+            height: 24px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
 
-    const canvas = document.getElementById("wheel");
-    const ctx = canvas.getContext("2d");
-    const actionBtn = document.getElementById("actionBtn");
-    const statusDiv = document.getElementById("status");
+    <h2>🍣 СУШІ РУЛЕТКА 🎲</h2>
 
-    const sectors = [
-        { label: "🎲 +1 спін", color: "#9B59B6" },
-        { label: "🍣 Рол 1 грн", color: "#FF6B81" },
-        { label: "🥤 Напій", color: "#FF4757" },
-        { label: "💸 Знижка 10%", color: "#2ED573" },
-        { label: "💰 Знижка 15%", color: "#1E90FF" },
-        { label: "🌀 Ще раз", color: "#FFA502" }
-    ];
+    <div class="wheel-box">
+        <div class="arrow"></div>
+        <canvas id="wheel" width="400" height="400"></canvas>
+    </div>
 
-    const numSectors = sectors.length;
-    const arc = (2 * Math.PI) / numSectors;
-    let currentAngle = 0;
-    let isSpinning = false;
-    let wonPrize = null;
+    <button id="actionBtn" class="spin-btn">КРУТИТИ!</button>
+    <div id="status"></div>
 
-    function drawWheel() {
-        const radius = canvas.width / 2;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    <script>
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+        }
 
-        sectors.forEach((sector, i) => {
-            const angle = currentAngle + i * arc;
-            
+        const canvas = document.getElementById("wheel");
+        const ctx = canvas.getContext("2d");
+        const actionBtn = document.getElementById("actionBtn");
+        const statusDiv = document.getElementById("status");
+
+        const sectors = [
+            { label: "🎲 +1 спін", color: "#9B59B6" },
+            { label: "🍣 Рол 1 грн", color: "#FF6B81" },
+            { label: "🥤 Напій", color: "#FF4757" },
+            { label: "💸 Знижка 10%", color: "#2ED573" },
+            { label: "💰 Знижка 15%", color: "#1E90FF" },
+            { label: "🌀 Ще раз", color: "#FFA502" }
+        ];
+
+        const numSectors = sectors.length;
+        const arc = (2 * Math.PI) / numSectors;
+        let currentAngle = 0;
+        let isSpinning = false;
+        let wonPrize = null;
+
+        function drawWheel() {
+            const radius = canvas.width / 2;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            sectors.forEach((sector, i) => {
+                const angle = currentAngle + i * arc;
+                
+                ctx.beginPath();
+                ctx.fillStyle = sector.color;
+                ctx.moveTo(radius, radius);
+                ctx.arc(radius, radius, radius, angle, angle + arc);
+                ctx.lineTo(radius, radius);
+                ctx.fill();
+                ctx.strokeStyle = "#111113";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(radius, radius);
+                const midAngle = angle + arc / 2;
+                ctx.rotate(midAngle);
+
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 17px -apple-system, sans-serif";
+                
+                const normalizedAngle = (midAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+                if (normalizedAngle > Math.PI / 2 && normalizedAngle < (3 * Math.PI) / 2) {
+                    ctx.rotate(Math.PI);
+                    ctx.textAlign = "left";
+                    ctx.fillText(sector.label, -radius + 30, 6);
+                } else {
+                    ctx.textAlign = "right";
+                    ctx.fillText(sector.label, radius - 30, 6);
+                }
+
+                ctx.restore();
+            });
+
             ctx.beginPath();
-            ctx.fillStyle = sector.color;
-            ctx.moveTo(radius, radius);
-            ctx.arc(radius, radius, radius, angle, angle + arc);
-            ctx.lineTo(radius, radius);
+            ctx.arc(radius, radius, 30, 0, 2 * Math.PI);
+            ctx.fillStyle = "#111113";
             ctx.fill();
-            ctx.strokeStyle = "#111113";
+            ctx.strokeStyle = "#FF4757";
             ctx.lineWidth = 4;
             ctx.stroke();
+        }
 
-            ctx.save();
-            ctx.translate(radius, radius);
-            const midAngle = angle + arc / 2;
-            ctx.rotate(midAngle);
+        drawWheel();
 
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 17px -apple-system, sans-serif";
-            
-            const normalizedAngle = (midAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-            if (normalizedAngle > Math.PI / 2 && normalizedAngle < (3 * Math.PI) / 2) {
-                ctx.rotate(Math.PI);
-                ctx.textAlign = "left";
-                ctx.fillText(sector.label, -radius + 30, 6);
-            } else {
-                ctx.textAlign = "right";
-                ctx.fillText(sector.label, radius - 30, 6);
+        actionBtn.addEventListener("click", () => {
+            if (wonPrize) {
+                if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                statusDiv.innerText = "🎁 Надсилаємо у чат...";
+                actionBtn.disabled = true;
+
+                if (tg && tg.sendData) {
+                    tg.sendData(JSON.stringify({ prize: wonPrize }));
+                } else {
+                    alert("Приз: " + wonPrize);
+                }
+                return;
             }
 
-            ctx.restore();
-        });
-
-        ctx.beginPath();
-        ctx.arc(radius, radius, 30, 0, 2 * Math.PI);
-        ctx.fillStyle = "#111113";
-        ctx.fill();
-        ctx.strokeStyle = "#FF4757";
-        ctx.lineWidth = 4;
-        ctx.stroke();
-    }
-
-    drawWheel();
-
-    actionBtn.addEventListener("click", () => {
-        // Якщо приз вже виграно — відправляємо
-        if (wonPrize) {
-            tg.HapticFeedback?.impactOccurred?.('medium');
-            statusDiv.innerText = "🎁 Надсилаємо у чат...";
+            if (isSpinning) return;
+            isSpinning = true;
             actionBtn.disabled = true;
 
-            if (tg.sendData) {
-                tg.sendData(JSON.stringify({ prize: wonPrize }));
-            } else {
-                alert("Виграш: " + wonPrize + " (Тестовий режим поза Telegram)");
+            if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+
+            const extraRounds = 6 + Math.floor(Math.random() * 4);
+            const winIndex = Math.floor(Math.random() * numSectors);
+            
+            const targetAngle = (2 * Math.PI * extraRounds) - (winIndex * arc) - (arc / 2) - (Math.PI / 2);
+            
+            let start = null;
+            const duration = 4000;
+
+            function animate(timestamp) {
+                if (!start) start = timestamp;
+                const progress = (timestamp - start) / duration;
+
+                if (progress < 1) {
+                    const easeOut = 1 - Math.pow(1 - progress, 3);
+                    currentAngle = targetAngle * easeOut;
+                    drawWheel();
+                    requestAnimationFrame(animate);
+                } else {
+                    currentAngle = targetAngle;
+                    drawWheel();
+                    
+                    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+                    wonPrize = sectors[winIndex].label;
+
+                    actionBtn.innerText = "🎁 ЗАБРАТИ ПРИЗ!";
+                    actionBtn.classList.add("claim-btn");
+                    actionBtn.disabled = false;
+                    statusDiv.innerText = "Вітаємо! Натисніть кнопку вище 👆";
+                }
             }
-            return;
-        }
 
-        if (isSpinning) return;
-        isSpinning = true;
-        actionBtn.disabled = true;
-
-        tg.HapticFeedback?.impactOccurred?.('heavy');
-
-        const extraRounds = 6 + Math.floor(Math.random() * 4);
-        const winIndex = Math.floor(Math.random() * numSectors);
-        
-        const targetAngle = (2 * Math.PI * extraRounds) - (winIndex * arc) - (arc / 2) - (Math.PI / 2);
-        
-        let start = null;
-        const duration = 4000;
-
-        function animate(timestamp) {
-            if (!start) start = timestamp;
-            const progress = (timestamp - start) / duration;
-
-            if (progress < 1) {
-                const easeOut = 1 - Math.pow(1 - progress, 3);
-                currentAngle = targetAngle * easeOut;
-                drawWheel();
-                requestAnimationFrame(animate);
-            } else {
-                currentAngle = targetAngle;
-                drawWheel();
-                
-                tg.HapticFeedback?.notificationOccurred?.('success');
-
-                wonPrize = sectors[winIndex].label;
-
-                actionBtn.innerText = "🎁 ЗАБРАТИ ПРИЗ!";
-                actionBtn.classList.add("claim-btn");
-                actionBtn.disabled = false;
-                statusDiv.innerText = "Вітаємо! Натисніть кнопку вище 👆";
-            }
-        }
-
-        requestAnimationFrame(animate);
-    });
-</script>
+            requestAnimationFrame(animate);
+        });
+    </script>
+</body>
+</html>
