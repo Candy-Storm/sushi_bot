@@ -208,19 +208,15 @@
                     const wonPrize = sectors[winIndex].label;
                     statusDiv.innerText = "🎁 Надсилаємо результат...";
 
-                    // Передаємо дані у Telegram та ЗАКРИВАЄМО WebApp
+                    // 🚀 Безпечна передача даних без примусового tg.close()
                     setTimeout(() => {
                         try {
                             tg.sendData(JSON.stringify({ prize: wonPrize }));
                         } catch (e) {
                             console.error("Помилка відправки:", e);
+                            statusDiv.innerText = "⚠️ Натисніть Х у кутку";
                         }
-                        
-                        // Примусове закриття вікна на мобільних
-                        setTimeout(() => {
-                            tg.close();
-                        }, 300);
-                    }, 500);
+                    }, 400);
                 }
             }
 
