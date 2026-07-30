@@ -76,7 +76,6 @@
             opacity: 0.5;
             transform: none;
         }
-        /* Стиль для кнопки забрати приз */
         .claim-btn {
             background: linear-gradient(135deg, #2ed573, #26af5f) !important;
             box-shadow: 0 6px 20px rgba(46, 213, 115, 0.5) !important;
@@ -184,7 +183,6 @@
         drawWheel();
 
         actionBtn.addEventListener("click", () => {
-            // Крок 2: Якщо приз уже виграно, надсилаємо його по кліку
             if (wonPrize) {
                 if (tg.HapticFeedback) {
                     tg.HapticFeedback.impactOccurred('medium');
@@ -192,12 +190,10 @@
                 statusDiv.innerText = "🎁 Надсилаємо у чат...";
                 actionBtn.disabled = true;
                 
-                // Передаємо результат у Telegram (закриється автоматично)
                 tg.sendData(JSON.stringify({ prize: wonPrize }));
                 return;
             }
 
-            // Крок 1: Запуск крутіння
             if (isSpinning) return;
             isSpinning = true;
             actionBtn.disabled = true;
@@ -208,7 +204,11 @@
 
             const extraRounds = 6 + Math.floor(Math.random() * 4);
             const winIndex = Math.floor(Math.random() * numSectors);
-            const targetAngle = (2 * Math.PI * extraRounds) + ((numSectors - winIndex - 0.5) * arc);
+            
+            // 🎯 ТОЧНИЙ РОЗРАХУНОК:
+            // Зсув на -Math.PI / 2 ставить центр 0-го сектора рівно під верхню стрілку (на 12 годину).
+            // Обертання проти годинникової стрілки дає гарантоване попадання в winIndex.
+            const targetAngle = (2 * Math.PI * extraRounds) - (winIndex * arc) - (arc / 2) - (Math.PI / 2);
             
             let start = null;
             const duration = 4000;
@@ -230,10 +230,8 @@
                         tg.HapticFeedback.notificationOccurred('success');
                     }
 
-                    // Запам'ятовуємо виграш
                     wonPrize = sectors[winIndex].label;
 
-                    // Змінюємо кнопку на "ЗАБРАТИ ПРИЗ"
                     actionBtn.innerText = "🎁 ЗАБРАТИ ПРИЗ!";
                     actionBtn.classList.add("claim-btn");
                     actionBtn.disabled = false;
