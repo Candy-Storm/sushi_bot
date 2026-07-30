@@ -25,15 +25,16 @@
             padding: 20px;
         }
         h2 {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             color: #ff4757;
-            font-size: 26px;
+            font-size: 24px;
             text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+            text-align: center;
         }
         .wheel-box {
             position: relative;
-            width: 320px;
-            height: 320px;
+            width: 300px;
+            height: 300px;
         }
         .arrow {
             position: absolute;
@@ -55,7 +56,7 @@
             box-shadow: 0 0 30px rgba(255, 71, 87, 0.3);
         }
         .spin-btn {
-            margin-top: 35px;
+            margin-top: 30px;
             padding: 16px 45px;
             font-size: 19px;
             font-weight: 800;
@@ -72,14 +73,22 @@
             transform: scale(0.94);
         }
         .spin-btn:disabled {
-            opacity: 0.4;
+            opacity: 0.5;
             transform: none;
+        }
+        #status {
+            margin-top: 15px;
+            font-size: 16px;
+            color: #2ed573;
+            font-weight: bold;
+            height: 24px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <h2>🍣 СУШІ РУЛЕТКА 🎲</h2>
+    <h2 id="title">🍣 СУШІ РУЛЕТКА 🎲</h2>
 
     <div class="wheel-box">
         <div class="arrow"></div>
@@ -87,6 +96,7 @@
     </div>
 
     <button id="spinBtn" class="spin-btn">КРУТИТИ!</button>
+    <div id="status"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -96,14 +106,15 @@
         const canvas = document.getElementById("wheel");
         const ctx = canvas.getContext("2d");
         const spinBtn = document.getElementById("spinBtn");
+        const statusDiv = document.getElementById("status");
 
         const sectors = [
+            { label: "🎲 +1 спін", color: "#9B59B6" },
+            { label: "🍣 Рол 1 грн", color: "#FF6B81" },
             { label: "🥤 Напій", color: "#FF4757" },
             { label: "💸 Знижка 10%", color: "#2ED573" },
             { label: "💰 Знижка 15%", color: "#1E90FF" },
-            { label: "🌀 Ще раз", color: "#FFA502" },
-            { label: "🎲 +1 спін", color: "#9B59B6" },
-            { label: "🍣 Рол 1 грн", color: "#FF6B81" }
+            { label: "🌀 Ще раз", color: "#FFA502" }
         ];
 
         const numSectors = sectors.length;
@@ -169,14 +180,13 @@
                 tg.HapticFeedback.impactOccurred('heavy');
             }
 
-            const extraRounds = 6 + Math.floor(Math.random() * 4); // 6-9 повних обертів
+            const extraRounds = 6 + Math.floor(Math.random() * 4);
             const winIndex = Math.floor(Math.random() * numSectors);
             
-            // Точна формула для зупинки виграшного сектора під верхньою стрілкою (1.5 * PI):
-            const targetAngle = (2 * Math.PI * extraRounds) + (1.5 * Math.PI) - (winIndex * arc) - (arc / 2);
+            const targetAngle = (2 * Math.PI * extraRounds) + ((numSectors - winIndex - 0.5) * arc);
             
             let start = null;
-            const duration = 4500;
+            const duration = 4000;
 
             function animate(timestamp) {
                 if (!start) start = timestamp;
@@ -196,9 +206,21 @@
                     }
 
                     const wonPrize = sectors[winIndex].label;
+                    statusDiv.innerText = "🎁 Надсилаємо результат...";
+
+                    // Передаємо дані у Telegram та ЗАКРИВАЄМО WebApp
                     setTimeout(() => {
-                        tg.sendData(JSON.stringify({ prize: wonPrize }));
-                    }, 600);
+                        try {
+                            tg.sendData(JSON.stringify({ prize: wonPrize }));
+                        } catch (e) {
+                            console.error("Помилка відправки:", e);
+                        }
+                        
+                        // Примусове закриття вікна на мобільних
+                        setTimeout(() => {
+                            tg.close();
+                        }, 300);
+                    }, 500);
                 }
             }
 

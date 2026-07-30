@@ -29,7 +29,7 @@ kb_inline_wheel = InlineKeyboardMarkup(
     inline_keyboard=[[
         InlineKeyboardButton(
             text="🎰 Відкрити Рулетку", 
-            web_app=WebAppInfo(url="https://candy-storm.github.io/sushi_bot/index.html?v=5")
+            web_app=WebAppInfo(url="https://candy-storm.github.io/sushi_bot/index.html?v=6")
         )
     ]]
 )
@@ -105,15 +105,26 @@ async def handle_web_app_data(message: types.Message):
     data = json.loads(message.web_app_data.data)
     win_prize = data.get("prize", "Знижка 10%")
     
-    # Фіксуємо час спіну в БД
-    update_spin_time(user_id)
-    
-    # Перевіряємо виграш
+    # 🌀 Сектор "Ще раз" (порожній)
     if win_prize in ["🌀 Ще раз", "🌀 Спробуйте ще"]:
+        update_spin_time(user_id)
         await message.answer("😔 На жаль, цього разу сектор порожній. Спробуйте ще раз завтра!")
+
+    # 🎲 Сектор "+1 спін на ЗАРАЗ"
     elif win_prize in ["🎲 +1 спін", "🎲 Спробуй завтра! (+1 спін)"]:
-        await message.answer("🎲 Вам випав бонусний спін на завтра! Повертайтеся завтра за призом!")
+        # НЕ викликаємо update_spin_time(user_id), щоб зберегти можливість прокрутки!
+        await message.answer(
+            "🎉 **Вітаємо! Ви виграли додатковий спін просто зараз!** 🎲\n\n"
+            "Твоя спроба збереглася! Відкривай рулетку та крути ще раз! 👇",
+            reply_markup=kb_inline_wheel,
+            parse_mode="Markdown"
+        )
+
+    # 🎁 Звичайний виграш призу
     else:
+        # Фіксуємо час спіну в БД
+        update_spin_time(user_id)
+        
         # Генеруємо промокод і зберігаємо в БД
         code, expires_str = save_promocode(user_id, win_prize)
         
