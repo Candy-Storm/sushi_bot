@@ -29,9 +29,6 @@
             color: #ff4757;
             font-size: 26px;
             text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
         .wheel-box {
             position: relative;
@@ -101,12 +98,12 @@
         const spinBtn = document.getElementById("spinBtn");
 
         const sectors = [
-            { label: "🎲 +1 спін", color: "#9B59B6" },
-            { label: "🍣 Рол 1 грн", color: "#FF6B81" },
             { label: "🥤 Напій", color: "#FF4757" },
             { label: "💸 Знижка 10%", color: "#2ED573" },
             { label: "💰 Знижка 15%", color: "#1E90FF" },
-            { label: "🌀 Ще раз", color: "#FFA502" }
+            { label: "🌀 Ще раз", color: "#FFA502" },
+            { label: "🎲 +1 спін", color: "#9B59B6" },
+            { label: "🍣 Рол 1 грн", color: "#FF6B81" }
         ];
 
         const numSectors = sectors.length;
@@ -121,7 +118,6 @@
             sectors.forEach((sector, i) => {
                 const angle = currentAngle + i * arc;
                 
-                // Сектор
                 ctx.beginPath();
                 ctx.fillStyle = sector.color;
                 ctx.moveTo(radius, radius);
@@ -132,7 +128,6 @@
                 ctx.lineWidth = 4;
                 ctx.stroke();
 
-                // Текст сектора
                 ctx.save();
                 ctx.translate(radius, radius);
                 const midAngle = angle + arc / 2;
@@ -141,7 +136,6 @@
                 ctx.fillStyle = "#ffffff";
                 ctx.font = "bold 17px -apple-system, sans-serif";
                 
-                // Перевірка та розворот тексту, щоб він не висів догори дригом
                 const normalizedAngle = (midAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
                 if (normalizedAngle > Math.PI / 2 && normalizedAngle < (3 * Math.PI) / 2) {
                     ctx.rotate(Math.PI);
@@ -155,7 +149,6 @@
                 ctx.restore();
             });
 
-            // Центр
             ctx.beginPath();
             ctx.arc(radius, radius, 30, 0, 2 * Math.PI);
             ctx.fillStyle = "#111113";
@@ -176,11 +169,11 @@
                 tg.HapticFeedback.impactOccurred('heavy');
             }
 
-            const extraRounds = 6 + Math.floor(Math.random() * 4);
+            const extraRounds = 6 + Math.floor(Math.random() * 4); // 6-9 повних обертів
             const winIndex = Math.floor(Math.random() * numSectors);
             
-            // Зміщення зупинки під стрілку (3PI/2 - верх)
-            const targetAngle = (2 * Math.PI * extraRounds) + ((numSectors - winIndex - 0.5) * arc);
+            // Точна формула для зупинки виграшного сектора під верхньою стрілкою (1.5 * PI):
+            const targetAngle = (2 * Math.PI * extraRounds) + (1.5 * Math.PI) - (winIndex * arc) - (arc / 2);
             
             let start = null;
             const duration = 4500;
