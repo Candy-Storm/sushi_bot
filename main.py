@@ -29,7 +29,7 @@ kb_inline_wheel = InlineKeyboardMarkup(
     inline_keyboard=[[
         InlineKeyboardButton(
             text="🎰 Відкрити Рулетку", 
-            web_app=WebAppInfo(url="https://candy-storm.github.io/sushi_bot/index.html?v=9")
+            web_app=WebAppInfo(url="https://candy-storm.github.io/sushi_bot/index.html?v=10")
         )
     ]]
 )

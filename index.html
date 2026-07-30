@@ -183,17 +183,21 @@
         drawWheel();
 
         actionBtn.addEventListener("click", () => {
+            // Крок 2: Натискання на "ЗАБРАТИ ПРИЗ"
             if (wonPrize) {
                 if (tg.HapticFeedback) {
                     tg.HapticFeedback.impactOccurred('medium');
                 }
-                statusDiv.innerText = "🎁 Надсилаємо у чат...";
-                actionBtn.disabled = true;
                 
+                // 1. Надсилаємо дані бота
                 tg.sendData(JSON.stringify({ prize: wonPrize }));
+                
+                // 2. Закриваємо WebApp примусово для мобільних пристроїв
+                tg.close();
                 return;
             }
 
+            // Крок 1: Запуск крутіння
             if (isSpinning) return;
             isSpinning = true;
             actionBtn.disabled = true;
@@ -205,9 +209,7 @@
             const extraRounds = 6 + Math.floor(Math.random() * 4);
             const winIndex = Math.floor(Math.random() * numSectors);
             
-            // 🎯 ТОЧНИЙ РОЗРАХУНОК:
-            // Зсув на -Math.PI / 2 ставить центр 0-го сектора рівно під верхню стрілку (на 12 годину).
-            // Обертання проти годинникової стрілки дає гарантоване попадання в winIndex.
+            // Розрахунок центровано під стрілку зверху
             const targetAngle = (2 * Math.PI * extraRounds) - (winIndex * arc) - (arc / 2) - (Math.PI / 2);
             
             let start = null;
