@@ -14,7 +14,7 @@
             user-select: none;
         }
         body {
-            background: radial-gradient(circle, #2c2c2e 0%, #111113 100%);
+            background: #111113;
             color: #ffffff;
             display: flex;
             flex-direction: column;
@@ -29,13 +29,15 @@
             color: #ff4757;
             font-size: 26px;
             text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .wheel-box {
             position: relative;
             width: 320px;
             height: 320px;
         }
-        /* Вказівник (стрілочка зверху) */
         .arrow {
             position: absolute;
             top: -18px;
@@ -53,7 +55,7 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            box-shadow: 0 0 30px rgba(255, 71, 87, 0.3), inset 0 0 15px rgba(0,0,0,0.5);
+            box-shadow: 0 0 30px rgba(255, 71, 87, 0.3);
         }
         .spin-btn {
             margin-top: 35px;
@@ -92,20 +94,19 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
-        tg.expand(); // Розгортаємо вікно Telegram на максимум
+        tg.expand();
 
         const canvas = document.getElementById("wheel");
         const ctx = canvas.getContext("2d");
         const spinBtn = document.getElementById("spinBtn");
 
-        // Призи та сектори (відповідають PRIZES у боті)
         const sectors = [
+            { label: "🎲 +1 спін", color: "#9B59B6" },
+            { label: "🍣 Рол 1 грн", color: "#FF6B81" },
             { label: "🥤 Напій", color: "#FF4757" },
             { label: "💸 Знижка 10%", color: "#2ED573" },
             { label: "💰 Знижка 15%", color: "#1E90FF" },
-            { label: "🌀 Ще раз", color: "#FFA502" },
-            { label: "🎲 +1 спін", color: "#9B59B6" },
-            { label: "🍣 Рол 1 грн", color: "#FF6B81" }
+            { label: "🌀 Ще раз", color: "#FFA502" }
         ];
 
         const numSectors = sectors.length;
@@ -120,32 +121,44 @@
             sectors.forEach((sector, i) => {
                 const angle = currentAngle + i * arc;
                 
-                // Малюємо сектор
+                // Сектор
                 ctx.beginPath();
                 ctx.fillStyle = sector.color;
                 ctx.moveTo(radius, radius);
                 ctx.arc(radius, radius, radius, angle, angle + arc);
                 ctx.lineTo(radius, radius);
                 ctx.fill();
-                ctx.strokeStyle = "#1C1C1E";
-                ctx.lineWidth = 5;
+                ctx.strokeStyle = "#111113";
+                ctx.lineWidth = 4;
                 ctx.stroke();
 
                 // Текст сектора
                 ctx.save();
                 ctx.translate(radius, radius);
-                ctx.rotate(angle + arc / 2);
-                ctx.textAlign = "right";
+                const midAngle = angle + arc / 2;
+                ctx.rotate(midAngle);
+
                 ctx.fillStyle = "#ffffff";
-                ctx.font = "bold 18px -apple-system, sans-serif";
-                ctx.fillText(sector.label, radius - 20, 6);
+                ctx.font = "bold 17px -apple-system, sans-serif";
+                
+                // Перевірка та розворот тексту, щоб він не висів догори дригом
+                const normalizedAngle = (midAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+                if (normalizedAngle > Math.PI / 2 && normalizedAngle < (3 * Math.PI) / 2) {
+                    ctx.rotate(Math.PI);
+                    ctx.textAlign = "left";
+                    ctx.fillText(sector.label, -radius + 30, 6);
+                } else {
+                    ctx.textAlign = "right";
+                    ctx.fillText(sector.label, radius - 30, 6);
+                }
+
                 ctx.restore();
             });
 
-            // Малюємо стильний центр
+            // Центр
             ctx.beginPath();
             ctx.arc(radius, radius, 30, 0, 2 * Math.PI);
-            ctx.fillStyle = "#1C1C1E";
+            ctx.fillStyle = "#111113";
             ctx.fill();
             ctx.strokeStyle = "#FF4757";
             ctx.lineWidth = 4;
@@ -159,26 +172,24 @@
             isSpinning = true;
             spinBtn.disabled = true;
 
-            // Вібрація при старті (якщо пристрій підтримує)
             if (tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('heavy');
             }
 
-            const extraRounds = 6 + Math.floor(Math.random() * 4); // 6-9 обертів
+            const extraRounds = 6 + Math.floor(Math.random() * 4);
             const winIndex = Math.floor(Math.random() * numSectors);
             
-            // Розрахунок зупинкиExactly під стрілку зверху (3PI/2)
+            // Зміщення зупинки під стрілку (3PI/2 - верх)
             const targetAngle = (2 * Math.PI * extraRounds) + ((numSectors - winIndex - 0.5) * arc);
             
             let start = null;
-            const duration = 4500; // 4.5 секунди анімації
+            const duration = 4500;
 
             function animate(timestamp) {
                 if (!start) start = timestamp;
                 const progress = (timestamp - start) / duration;
 
                 if (progress < 1) {
-                    // Плавне гальмування колеса (Ease Out Cubic)
                     const easeOut = 1 - Math.pow(1 - progress, 3);
                     currentAngle = targetAngle * easeOut;
                     drawWheel();
@@ -191,7 +202,6 @@
                         tg.HapticFeedback.notificationOccurred('success');
                     }
 
-                    // Повертаємо виграш у бот Telegram
                     const wonPrize = sectors[winIndex].label;
                     setTimeout(() => {
                         tg.sendData(JSON.stringify({ prize: wonPrize }));
