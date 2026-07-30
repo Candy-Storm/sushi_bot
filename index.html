@@ -105,8 +105,10 @@
     <script>
         const tg = window.Telegram ? window.Telegram.WebApp : null;
         if (tg) {
-            tg.ready();
-            tg.expand();
+            try {
+                tg.ready();
+                tg.expand();
+            } catch (e) { console.log(e); }
         }
 
         const canvas = document.getElementById("wheel");
