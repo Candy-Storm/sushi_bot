@@ -1,0 +1,16 @@
+[project]
+name = "sushi-bot"
+version = "0.1.0"
+description = "Telegram Bot Sushi Roulette"
+authors = [
+    {name = "Candy-Storm", email = "mishachaikawork@gmail.com"}
+]
+requires-python = ">=3.10,<3.15"
+package-mode = false
+dependencies = [
+    "aiogram>=3.14.0,<4.0.0"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Суші Рулетка</title>
+    <!-- Підключаємо Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: #1c1c1e;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #ff4757;
+            font-size: 24px;
+        }
+        .wheel-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+        }
+        /* Вказівник (стрілочка зверху) */
+        .arrow {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid #ff4757;
+            z-index: 10;
+            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.4);
+        }
+        .spin-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(45deg, #ff4757, #ff6b81);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .spin-btn:active {
+            transform: scale(0.95);
+        }
+        .spin-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🍣 Суші Рулетка 🎲</h2>
+
+    <div class="wheel-container">
+        <div class="arrow"></div>
+        <canvas id="wheel" width="400" height="400"></canvas>
+    </div>
+
+    <button id="spinBtn" class="spin-btn">КРУТИТИ!</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Розгортаємо WebApp на весь екран
+
+        const canvas = document.getElementById("wheel");
+        const ctx = canvas.getContext("2d");
+        const spinBtn = document.getElementById("spinBtn");
+
+        // 6 секторів рулетки
+        const sectors = [
+            { label: "🥤 Напій", color: "#ff4757" },
+            { label: "💸 Знижка 10%", color: "#2ed573" },
+            { label: "💰 Знижка 15%", color: "#1e90ff" },
+            { label: "🌀 Ще раз", color: "#ffa502" },
+            { label: "🎲 +1 спін", color: "#9b59b6" },
+            { label: "🍣 Рол за 1грн", color: "#ff6b81" }
+        ];
+
+        const numSectors = sectors.length;
+        const arc = (2 * Math.PI) / numSectors;
+        let currentAngle = 0;
+        let isSpinning = false;
+
+        // Малювання колеса
+        function drawWheel() {
+            const radius = canvas.width / 2;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            sectors.forEach((sector, i) => {
+                const angle = currentAngle + i * arc;
+                
+                // Малюємо сектор
+                ctx.beginPath();
+                ctx.fillStyle = sector.color;
+                ctx.moveTo(radius, radius);
+                ctx.arc(radius, radius, radius, angle, angle + arc);
+                ctx.lineTo(radius, radius);
+                ctx.fill();
+                ctx.strokeStyle = "#1c1c1e";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Текст у секторі
+                ctx.save();
+                ctx.translate(radius, radius);
+                ctx.rotate(angle + arc / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 18px sans-serif";
+                ctx.fillText(sector.label, radius - 20, 6);
+                ctx.restore();
+            });
+        }
+
+        drawWheel();
+
+        // Анімація обертання
+        spinBtn.addEventListener("click", () => {
+            if (isSpinning) return;
+            isSpinning = true;
+            spinBtn.disabled = true;
+
+            // Випадкова кількість обертів + випадковий кут
+            const extraRounds = 5 + Math.floor(Math.random() * 5); // 5-9 повних обертів
+            const randomSectorIndex = Math.floor(Math.random() * numSectors);
+            
+            // Розрахунок кінцевого кута (щоб стрілка вказувала на потрібний сектор)
+            const targetAngle = (2 * Math.PI * extraRounds) + ((numSectors - randomSectorIndex - 0.5) * arc);
+            
+            let start = null;
+            const duration = 4000; // 4 секунди анімації
+
+            function animate(timestamp) {
+                if (!start) start = timestamp;
+                const progress = (timestamp - start) / duration;
+
+                if (progress < 1) {
+                    // Плавне сповільнення (Ease-Out Cubic)
+                    const easeOut = 1 - Math.pow(1 - progress, 3);
+                    currentAngle = targetAngle * easeOut;
+                    drawWheel();
+                    requestAnimationFrame(animate);
+                } else {
+                    currentAngle = targetAngle;
+                    drawWheel();
+                    
+                    // Результат
+                    const wonSector = sectors[randomSectorIndex].label;
+                    
+                    // Надсилаємо дані назад у бот Telegram
+                    setTimeout(() => {
+                        tg.sendData(JSON.stringify({ prize: wonSector }));
+                    }, 500);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        });
+    </script>
+</body>
+</html>
