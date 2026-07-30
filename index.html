@@ -189,11 +189,11 @@
                     tg.HapticFeedback.impactOccurred('medium');
                 }
                 
-                // 1. Надсилаємо дані бота
+                statusDiv.innerText = "🎁 Надсилаємо у чат...";
+                actionBtn.disabled = true;
+
+                // Передаємо дані в бот (tg.sendData самостійно відправить JSON і закриє WebApp)
                 tg.sendData(JSON.stringify({ prize: wonPrize }));
-                
-                // 2. Закриваємо WebApp примусово для мобільних пристроїв
-                tg.close();
                 return;
             }
 
